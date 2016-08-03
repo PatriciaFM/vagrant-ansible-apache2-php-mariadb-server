@@ -1,0 +1,46 @@
+- name: Provision Development Environment
+  hosts: development
+  sudo: False
+  vars:
+    user: "{{ ansible_ssh_user }}"
+  vars_files:
+    - ../files/variables.yml
+    - ../files/local.parameters.yml
+  tasks:
+    - name: Setup hosts ans hostname
+      include: ./includes/hosts.yml
+
+    - name: Configure aliases
+      include: ./includes/aliases.yml
+
+    - name: Install apt packages
+      include: ./includes/packages.yml
+      vars:
+        packages:
+          - language-pack-en
+          - ntpdate
+          - git
+          - ant
+          - python-mysqldb
+          - software-properties-common
+#
+    - name: Configure locales
+      include: ./includes/locales.yml
+
+    - name: Configure DateTime
+      include: ./includes/datetime.yml
+
+    - name: Configure Git globals
+      include: ./includes/git-config.yml
+
+    - name: Setup Apache2 and apache vhost
+      include: ./includes/apache2.yml
+
+    - name: Setup Php & Php-FPM
+      include: ./includes/php.yml
+
+    - name: Setup MariaDB
+      include: ./includes/mariadb.yml
+
+  handlers:
+    - include: ./handlers/handlers.yml

@@ -1,0 +1,7 @@
+- name: Configure aliases
+  sudo: True
+  lineinfile: >
+    dest=/home/vagrant/.bashrc
+    regexp="^alias ll="
+    line="alias ll='ls -alhF'"
+    state=present

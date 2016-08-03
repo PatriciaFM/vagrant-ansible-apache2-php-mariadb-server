@@ -1,0 +1,14 @@
+- sudo: True
+  command: locale-gen {{ locale.code }}
+
+- sudo: True
+  command: locale-gen {{ locale.code }}.{{ locale.charset }}
+
+- sudo: True
+  command: update-locale LANG={{ locale.code }}.{{ locale.charset }}
+
+- sudo: True
+  command: locale-gen {{ locale.code }}.{{ locale.charset }}
+
+- sudo: True
+  command: dpkg-reconfigure locales

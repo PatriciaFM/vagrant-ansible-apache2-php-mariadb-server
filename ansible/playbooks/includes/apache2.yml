@@ -1,0 +1,133 @@
+##
+# Install apache2
+#
+- name: Install apache2
+  sudo: True
+  apt: name={{ item }} update_cache=yes state=latest cache_valid_time=3600
+  with_items:
+    - apache2
+    - apache2-mpm-event
+    - libapache2-mod-fastcgi
+
+##
+# Enable mods
+#
+- name: Enabled mods
+  apache2_module: name={{ item }} state=present
+  sudo: True
+  with_items:
+    - rewrite
+    - ssl
+    - proxy
+    - proxy_http
+    - actions
+    - fastcgi
+    - headers
+    - proxy
+    - proxy_fcgi
+    - proxy_http
+  notify:
+    - restart apache2
+
+##
+# Config apache
+#
+- name: apache2 listen on port {{ apache.port }}
+  sudo: True
+  lineinfile: >
+    dest=/etc/apache2/ports.conf
+    regexp="^Listen "
+    line="Listen {{ apache.port }}"
+    state=present
+  notify:
+    - restart apache2
+
+- name: apache2 configure default charset {{ locale.charset }}
+  sudo: True
+  lineinfile: >
+    dest=/etc/apache2/conf-available/charset.conf
+    regexp="^#AddDefaultCharset "
+    line="AddDefaultCharset {{ locale.charset }}"
+    state=present
+  notify:
+    - restart apache2
+
+- name: Configure apache2 php-fpm connector
+  sudo: True
+  template: >
+    src=../files/apache2-php-fpm.j2
+    dest=/etc/apache2/conf-available/php5-fpm.conf
+  register: php5_fpm_copied
+
+##
+# Enable confs
+#
+- name: Enable confs
+  sudo: True
+  command: a2enconf php5-fpm
+  when: php5_fpm_copied.changed
+  notify:
+    - restart apache2
+
+##
+# Setup ports on default hosts
+#
+- name: apache2 default virtualhost on port {{ apache.port }}
+  sudo: True
+  lineinfile: >
+    dest=/etc/apache2/sites-available/000-default.conf
+    regexp="^<VirtualHost \*:"
+    line="<VirtualHost *:{{ apache.port }}>"
+  notify:
+    - restart apache2
+
+- name: apache2 default virtualhost on port {{ apache.tls.port }}
+  sudo: True
+  lineinfile: >
+    dest=/etc/apache2/sites-available/default-ssl.conf
+    regexp="^<VirtualHost \*:"
+    line="<VirtualHost *:{{ apache.tls.port }}>"
+  notify:
+    - restart apache2
+
+##
+# Create project virtual host and add it to apache
+#
+- name: create {{ apache.host_name }}_{{ apache.port }} virtual host file
+  sudo: True
+  template: >
+    src=../files/{{ apache.host_name }}_{{ apache.port }}.conf.j2
+    dest=/etc/apache2/sites-available/{{ apache.host_name }}_{{ apache.port }}.conf
+
+- name: Add site {{ apache.host_name }}_{{ apache.port }}
+  sudo: True
+  command: a2ensite {{ apache.host_name }}_{{ apache.port }}.conf
+  notify:
+    - restart apache2
+
+##
+# Create project ssl virtual host, tls certificates and adding vhost to apache
+#
+- name: create {{ apache.host_name }}_{{ apache.tls.port }} virtual host file
+  sudo: True
+  template: >
+    src=../files/{{ apache.host_name }}_{{ apache.tls.port }}.conf.j2
+    dest=/etc/apache2/sites-available/{{ apache.host_name }}_{{ apache.tls.port }}.conf
+
+- name: generate TLS certificates
+  sudo: True
+  command: >
+    openssl req
+    -x509
+    -nodes
+    -days 3650
+    -newkey rsa:2048
+    -subj /CN={{ apache.host_name }}
+    -keyout {{ apache.tls.cert_key_file }}
+    -out {{ apache.tls.cert_file }}
+
+- name: Add site {{ apache.host_name }}_{{ apache.tls.port }}
+  sudo: True
+  command: a2ensite {{ apache.host_name }}_{{ apache.tls.port }}.conf
+  notify:
+    - restart apache2

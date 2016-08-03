@@ -1,0 +1,107 @@
+##
+# MariaDB
+#
+- name: Install MariaDB repository
+  sudo: True
+  apt_repository: repo='deb http://ftp.osuosl.org/pub/mariadb/repo/10.0/ubuntu trusty main' state=present
+  notify:
+    - update repositories
+
+- name: Add repository key to the system
+  sudo: True
+  apt_key: keyserver=keyserver.ubuntu.com id=0xcbcb082a1bb943db
+
+- name: Install MariaDB required packages
+  sudo: True
+  apt: name={{ item }} update_cache=yes cache_valid_time=3600 state=present force=yes
+  with_items:
+    - mariadb-server
+
+##
+# Configure MySQL ini settings
+#
+- name: Configure ini settings
+  sudo: True
+  template: >
+    src=../files/my.cnf.j2
+    dest=/etc/mysql/my.cnf
+  notify:
+    - restart mysql
+
+##
+# Stop MariaDB before create db structure
+#
+- name: Stop MySQL
+  sudo: True
+  action: service name=mysql state=stopped
+
+##
+# Create MariaDB database Structure
+#
+- name: Create MariaDB DB structure
+  sudo: True
+  command: mysql_install_db
+
+##
+# Start MariaDB after create db structure
+#
+- name: Start MySQL
+  sudo: True
+  action: service name=mysql state=started
+
+##
+# MySQL Secure Installation
+#
+
+# 'localhost' needs to be the last item for idempotency, see
+# http://ansible.cc/docs/modules.html#mysql-user
+- name: Change root user password on first run
+  mysql_user: >
+    login_user={{ mysql.root_dbuser }}
+    login_password='{{ params.mysql.root_password }}'
+    login_host='{{ vagrant.ip }}'
+    name={{ mysql.root_dbuser }}
+    password={{ params.mysql.root_password }}
+    priv=*.*:ALL,GRANT
+    host={{ item }}
+  with_items:
+    - "{{ server.host }}"
+    - 127.0.0.1
+    - ::1
+    - localhost
+
+- name: Delete anonymous MySQL server user for {{ server.host }}
+  action: >
+    mysql_user
+    login_user={{ mysql.root_dbuser }}
+    login_password='{{ params.mysql.root_password }}'
+    user="" host="{{ server.host }}"
+    state="absent"
+
+- name: Delete anonymous MySQL server user for localhost
+  action: >
+    mysql_user
+    login_user={{ mysql.root_dbuser }}
+    login_password='{{ params.mysql.root_password }}'
+    user=""
+    state="absent"
+
+- name: remove the MySQL test database
+  action: >
+    mysql_db
+    login_user={{ mysql.root_dbuser }}
+    login_password='{{ params.mysql.root_password }}'
+    db=test
+    state=absent
+
+##
+# Create DB user
+#
+- name: Create Goals Rewards db user
+  mysql_user: >
+    login_user={{ mysql.root_dbuser }}
+    login_password='{{ params.mysql.root_password }}'
+    name={{ mysql.example_dbuser }}
+    password={{ params.mysql.example_password }}
+    priv=*.*:ALL
+    state=present

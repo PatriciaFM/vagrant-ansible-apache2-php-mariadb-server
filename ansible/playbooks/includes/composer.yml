@@ -1,0 +1,5 @@
+- name: Excute composer install
+  composer:
+    command=install
+    no_dev=no
+    working_dir={{ apache.host_path }}/{{ apache.host_name }}

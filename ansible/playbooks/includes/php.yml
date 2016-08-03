@@ -1,0 +1,195 @@
+##
+# Install Php
+#
+- name: Install Php
+  sudo: True
+  apt: name={{ item }} update_cache=yes state=latest cache_valid_time=3600
+  with_items:
+    - php5-json
+    - php5-sqlite
+    - php5-xdebug
+    - php5-cli
+    - php5-fpm
+    - php5-imagick
+    - php5-common
+    - php5-gd
+    - php5-curl
+    - php5-mcrypt
+    - php5-mysql
+    - php5-intl
+
+##
+# Configure xdebug extension
+#
+- name: Configure xdebug extension
+  sudo: True
+  template: >
+    src=../files/xdebug.ini.j2
+    dest=/etc/php5/mods-available/xdebug.ini
+
+##
+# Enable extensions
+#
+- name: Enable Php5 curl extension
+  sudo: True
+  command: php5enmod curl
+  args:
+    creates: /etc/php5/fpm/conf.d/20-curl.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 gd extension
+  sudo: True
+  command: php5enmod gd
+  args:
+    creates: /etc/php5/fpm/conf.d/20-gd.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 imagick extension
+  sudo: True
+  command: php5enmod imagick
+  args:
+    creates: /etc/php5/fpm/conf.d/20-imagick.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 intl extension
+  sudo: True
+  command: php5enmod intl
+  args:
+    creates: /etc/php5/fpm/conf.d/20-intl.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 json extension
+  sudo: True
+  command: php5enmod  json
+  args:
+    creates: /etc/php5/fpm/conf.d/20-json.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 mcrypt extension
+  sudo: True
+  command: php5enmod mcrypt
+  args:
+    creates: /etc/php5/fpm/conf.d/20-mcrypt.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 mysqli extension
+  sudo: True
+  command: php5enmod mysqli
+  args:
+    creates: /etc/php5/fpm/conf.d/20-mysqli.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 mysql extension
+  sudo: True
+  command: php5enmod mysql
+  args:
+    creates: /etc/php5/fpm/conf.d/20-mysql.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 pdo extension
+  sudo: True
+  command: php5enmod pdo
+  args:
+    creates: /etc/php5/fpm/conf.d/10-pdo.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 opcache extension
+  sudo: True
+  command: php5enmod opcache
+  args:
+    creates: /etc/php5/fpm/conf.d/05-opcache.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 pdo_mysql extension
+  sudo: True
+  command: php5enmod pdo_mysql
+  args:
+    creates: /etc/php5/fpm/conf.d/20-pdo_mysql.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 pdo_sqlite extension
+  sudo: True
+  command: php5enmod pdo_sqlite
+  args:
+    creates: /etc/php5/fpm/conf.d/20-pdo_sqlite.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 sqlite3 extension
+  sudo: True
+  command: php5enmod sqlite3
+  args:
+    creates: /etc/php5/fpm/conf.d/20-sqlite3.ini
+  notify:
+    - restart php5-fpm
+
+- name: Enable Php5 xdebug extension
+  sudo: True
+  command: php5enmod xdebug
+  args:
+    creates: /etc/php5/fpm/conf.d/20-xdebug.ini
+  notify:
+    - restart php5-fpm
+
+##
+# Configure ini settings
+#
+- name: Configure php-fpm ini default_charset
+  sudo: True
+  lineinfile: >
+    dest=/etc/php5/fpm/php.ini
+    regexp="^;default_charset ="
+    line="default_charset = "{{ locale.charset }}""
+    state=present
+  notify:
+    - restart php5-fpm
+
+- name: Configure php-fpm ini date.timezone
+  sudo: True
+  lineinfile: >
+    dest=/etc/php5/fpm/php.ini
+    regexp="^;date.timezone ="
+    line="date.timezone = "{{ server.timezone }}""
+    state=present
+  notify:
+    - restart php5-fpm
+
+- name: Configure php-cli ini default_charset
+  sudo: True
+  lineinfile: >
+    dest=/etc/php5/cli/php.ini
+    regexp="^;default_charset ="
+    line="default_charset = "{{ locale.charset }}""
+    state=present
+    
+- name: Configure php-cli ini date.timezone
+  sudo: True
+  lineinfile: >
+    dest=/etc/php5/cli/php.ini
+    regexp="^;date.timezone ="
+    line="date.timezone = "{{ server.timezone }}""
+    state=present
+
+##
+# Composer install
+#
+- name: Install Composer globally 
+  sudo: True
+  shell: >
+    curl -sS https://getcomposer.org/installer
+    | php --
+    --install-dir=/usr/local/bin
+    --filename=composer
+  args:
+    creates: /usr/local/bin/composer

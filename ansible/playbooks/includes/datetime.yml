@@ -1,0 +1,18 @@
+- name: Configure time zone
+  sudo: True
+  command: timedatectl set-timezone {{ server.timezone }}
+
+- name: Configure Datetime syncro script
+  sudo: True
+  copy: >
+    src=../files/ntpdate
+    dest=/etc/cron.hourly/ntpdate
+    owner=root
+    group=root
+    mode=0744
+  register: datetime_script_copied
+
+- name: Execute first time Datetime syncro script
+  sudo: True
+  command: /etc/cron.hourly/ntpdate
+  when: datetime_script_copied.changed

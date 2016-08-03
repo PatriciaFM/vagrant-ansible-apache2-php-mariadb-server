@@ -1,0 +1,27 @@
+<VirtualHost *:{{ apache.port }}>
+  ServerName {{ apache.host_name }}
+
+  RewriteEngine on
+
+  ## Vhost docroot
+  DocumentRoot "{{ apache.host_path }}/{{ apache.host_name }}/web"
+
+  ## Directories
+  <Directory "{{ apache.host_path }}/{{ apache.host_name }}/web">
+    Options Indexes FollowSymlinks MultiViews
+    AllowOverride All
+    Require all granted
+  </Directory>
+
+  ## Logging
+  ErrorLog "/var/log/apache2/{{ apache.host_name }}_{{ apache.port }}_error.log"
+  ServerSignature Off
+  CustomLog "/var/log/apache2/{{ apache.host_name }}_{{ apache.port }}_access.log" combined
+
+  ## SetEnv/SetEnvIf for environment variables
+  SetEnv APP_ENV {{ apache.environment }}
+  SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+  ## Custom fragment
+  ##
+</VirtualHost>

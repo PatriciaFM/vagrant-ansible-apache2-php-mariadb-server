@@ -1,0 +1,38 @@
+vagrant:
+  user: vagrant
+  ip: 192.168.33.33
+
+server:
+  host: local-example
+  timezone: Europe/Amsterdam
+
+locale:
+  code: en_US
+  charset: UTF-8
+
+apache:
+  port: 80
+  environment: development
+  host_name: local.example.com
+  host_path: /var/www
+  host_owner: www-data
+  host_group: www-data
+  tls:
+    port: 443
+    cert_file: /etc/ssl/certs/local.example.com.crt
+    cert_key_file: /etc/ssl/certs/local.example.com.key
+
+php_fpm:
+  port: 9000
+
+php:
+  xdebug:
+    remote_port: 9090
+    idekey: vagrant
+
+mysql:
+  dbname: example
+  root_dbuser: root
+  dbhost: localhost
+  dbport: 3306
+  example_dbuser: example-user

@@ -1,0 +1,8 @@
+params:
+  git:
+    username: Your-Name
+    email: Your-Name@domain.com
+    editor: nano
+
+  mysql:
+    root_password: secret-here
